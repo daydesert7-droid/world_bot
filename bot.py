@@ -13,8 +13,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-CREATOR_ID = os.environ.get('CREATOR_ID')
+TOKEN = "8132501492:AAFX7r2V4FzrytRH9Ut0paKzcahNdWx8azg"
+CREATOR_ID = "2037455253"
 
 # Проверка обязательных переменных
 if not TOKEN:
