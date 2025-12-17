@@ -5,6 +5,7 @@ import sys
 import os
 import datetime
 import threading
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from logging.handlers import RotatingFileHandler
@@ -145,7 +146,7 @@ class BotMonitor:
             bot_logger.error(f"Ошибка heartbeat: {e}")
 
     def run_scheduled_tasks(self):
-        """Запуск запланированных задач"""
+        """Запуск запланированных задач в отдельном потоке"""
         bot_logger.info("Планировщик задач запущен")
         while self.running:
             try:
@@ -394,7 +395,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Произошла внутренняя ошибка. Пожалуйста, попробуйте позже."
             )
     except Exception as e:
-        bot_logger.error(f"Ошибка в глобальном обработчике ошибок: {e}")
+        bot_logger.error(f"Ошибка в глобальном обработчике ошибок: {e}", exc_info=True)
 
 async def post_init(application: Application):
     """Функция инициализации после запуска бота"""
@@ -406,8 +407,8 @@ async def post_stop(application: Application):
     bot_logger.info("Бот останавливается")
     monitor.stop()
 
-def run_bot():
-    """Функция запуска бота для использования в потоке"""
+async def main():
+    """Основная асинхронная функция запуска бота"""
     try:
         # Инициализация базы данных
         init_database()
@@ -449,7 +450,7 @@ def run_bot():
 
         # Запуск бота
         bot_logger.info("Запуск Telegram бота...")
-        application.run_polling(
+        await application.run_polling(
             poll_interval=1.0,
             timeout=30,
             drop_pending_updates=True,
@@ -460,9 +461,14 @@ def run_bot():
         bot_logger.error(f"Критическая ошибка при запуске бота: {e}", exc_info=True)
         raise
 
-def main():
-    """Основная функция (для обратной совместимости)"""
-    run_bot()
+def run_bot():
+    """Функция запуска бота для использования в потоке"""
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        bot_logger.info("Бот остановлен пользователем")
+    except Exception as e:
+        bot_logger.error(f"Ошибка при запуске бота: {e}", exc_info=True)
 
 if __name__ == '__main__':
-    main()
+    run_bot()
